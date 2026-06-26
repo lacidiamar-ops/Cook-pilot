@@ -1,0 +1,5 @@
+[functions.command-orchestrator]
+verify_jwt = true
+
+[functions.command-approval]
+verify_jwt = true
