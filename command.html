@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#071b5b" />
+  <title>Cook Pilot Command</title>
+  <link rel="stylesheet" href="/command.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="side">
+      <div class="brand"><span class="logo">C<i></i><i></i><i></i></span><div><b>Cook Pilot</b><small>COMMAND · VOICE FIRST</small></div></div>
+      <div class="workspace"><span>✦</span><div><b>Administration centrale</b><small>Amar · Fondateur</small></div><span>⌄</span></div>
+      <span class="nav-label">PILOTAGE</span>
+      <nav class="nav">
+        <button class="active" data-view="cockpit"><span>⌘</span> Cockpit vocal</button>
+        <button data-view="quotes"><span>▧</span> Devis <b class="count" id="quote-count">0</b></button>
+        <button data-view="agents"><span>✦</span> Agents IA</button>
+        <button data-view="missions"><span>→</span> Missions <b class="count" id="mission-count">0</b></button>
+        <button data-view="approvals"><span>✓</span> À valider <b class="count" id="approval-count">0</b></button>
+      </nav>
+      <span class="nav-label">OPÉRATIONS</span>
+      <nav class="nav">
+        <button data-view="support"><span>◉</span> Support <b class="count" id="ticket-count">0</b></button>
+        <button data-view="prospecting"><span>◎</span> Prospection</button>
+        <button data-view="restaurants"><span>⌂</span> Restaurants</button>
+      </nav>
+      <div class="side-foot"><i></i> Mode local · API configurée côté serveur</div>
+    </aside>
+    <main class="main">
+      <header class="top"><div class="crumb"><span>Cook Pilot Command</span> / <b id="crumb">Cockpit vocal</b></div><div class="top-right"><div class="avatar">AL</div><div class="profile"><b>Amar Lacidi</b><small>Fondateur</small></div></div></header>
+      <section class="content" id="app-content"></section>
+    </main>
+  </div>
+  <div class="modal" id="modal"><div class="modal-box"><div class="modal-head"><div><span class="eyebrow" id="modal-eyebrow"></span><h2 id="modal-title"></h2></div><button class="close" id="modal-close">×</button></div><div id="modal-body"></div></div></div>
+  <div class="toast" id="toast"><b>✦</b><span id="toast-text"></span><button id="toast-close">×</button></div>
+  <script src="/command-data.js"></script>
+  <script src="/runtime.js"></script>
+</body>
+</html>
