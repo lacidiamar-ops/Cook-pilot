@@ -6,3 +6,6 @@ verify_jwt = true
 
 [functions.command-agent-router]
 verify_jwt = true
+
+[functions.command-technical-loop]
+verify_jwt = true
