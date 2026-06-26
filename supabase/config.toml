@@ -3,3 +3,6 @@ verify_jwt = true
 
 [functions.command-approval]
 verify_jwt = true
+
+[functions.command-agent-router]
+verify_jwt = true
