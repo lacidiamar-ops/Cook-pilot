@@ -1,1 +1,1 @@
-// runtime
+const test = 1;
