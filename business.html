@@ -10,12 +10,12 @@
 <div class="app">
   <aside class="side">
     <div class="brand"><span class="logo">C<i></i><i></i><i></i></span><div><b>Cook Pilot</b><small>BUSINESS · INTERNE</small></div></div>
-    <div class="workspace"><span>✦</span><div><b>Back-office fondateur</b><small>Prospection · Déploiement · Support</small></div><span>⌄</span></div>
+    <div class="workspace"><span>✦</span><div><b>Back-office fondateur</b><small>Déploiement · Support</small></div><span>⌄</span></div>
     <span class="nav-label">MODULES</span>
     <nav class="nav" id="business-nav">
       <button class="active" data-view="dashboard"><span>⌘</span> Dashboard</button>
       <button data-view="crm"><span>◎</span> CRM prospects</button>
-      <button data-view="campaigns"><span>✉</span> Campagnes IA</button>
+      <button data-view="messages"><span>✉</span> Messages IA</button>
       <button data-view="pipeline"><span>→</span> Pipeline</button>
       <button data-view="quotes"><span>▧</span> Devis</button>
       <button data-view="onboarding"><span>✓</span> Onboarding</button>
@@ -29,6 +29,42 @@
     <section class="content" id="business-content"></section>
   </main>
 </div>
-<script src="/business.js"></script>
+<script>
+(() => {
+  const content = document.getElementById('business-content');
+  const crumb = document.getElementById('crumb');
+  const buttons = Array.from(document.querySelectorAll('[data-view]'));
+  const pages = {
+    dashboard: ['Dashboard', 'Vue interne Cook Pilot : prospects, devis, déploiement, support et monitoring.'],
+    crm: ['CRM prospects', 'Restaurants à qualifier, score, statut et prochaine action.'],
+    messages: ['Messages IA', 'Préparation de messages commerciaux avant validation humaine.'],
+    pipeline: ['Pipeline', 'Suivi Prospect → Démo → Devis → Signé → Onboarding.'],
+    quotes: ['Devis', 'Préparation des offres Human, HACCP et Center.'],
+    onboarding: ['Onboarding', 'Checklist : comptes, modules, tablettes, PDF et commande vocale.'],
+    support: ['Support', 'Tickets client, priorité, module concerné et statut.'],
+    monitoring: ['Monitoring', 'Santé Vercel, Supabase, OCR, voix et IA.']
+  };
+  function render(view) {
+    const page = pages[view] || pages.dashboard;
+    crumb.textContent = page[0];
+    buttons.forEach(button => button.classList.toggle('active', button.dataset.view === view));
+    content.innerHTML = `
+      <div class="head"><div><span class="eyebrow">BUSINESS INTERNE</span><h1>${page[0]}</h1><p>${page[1]}</p></div></div>
+      <form class="command" style="grid-template-columns:1fr auto;margin-bottom:16px"><input placeholder="Commande vocale ou texte interne"><button>Commande vocale</button></form>
+      <div class="metrics">
+        <article class="metric"><i>◎</i><span>Prospects</span><b>3</b><small>à suivre</small></article>
+        <article class="metric"><i>→</i><span>Démos</span><b>1</b><small>à préparer</small></article>
+        <article class="metric"><i>◉</i><span>Tickets</span><b>2</b><small>ouverts</small></article>
+        <article class="metric"><i>✓</i><span>Onboarding</span><b>2/8</b><small>étapes faites</small></article>
+      </div>
+      <div class="grid">
+        <article class="panel pad"><span class="eyebrow">MODULE</span><h2>${page[0]}</h2><p class="note">Module réservé super-admin. Les clients restaurants ne doivent pas voir cet espace.</p></article>
+        <article class="panel pad"><span class="eyebrow">VALIDATION</span><h2>Action sensible</h2><p class="note">Aucun envoi, devis, configuration ou action client sans validation humaine.</p></article>
+      </div>`;
+  }
+  buttons.forEach(button => button.addEventListener('click', () => render(button.dataset.view)));
+  render('dashboard');
+})();
+</script>
 </body>
 </html>
