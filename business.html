@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cook Pilot Business</title>
+<link rel="stylesheet" href="/command.css" />
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="logo">C<i></i><i></i><i></i></span><div><b>Cook Pilot</b><small>BUSINESS · INTERNE</small></div></div>
+    <div class="workspace"><span>✦</span><div><b>Back-office fondateur</b><small>Prospection · Déploiement · Support</small></div><span>⌄</span></div>
+    <span class="nav-label">MODULES</span>
+    <nav class="nav" id="business-nav">
+      <button class="active" data-view="dashboard"><span>⌘</span> Dashboard</button>
+      <button data-view="crm"><span>◎</span> CRM prospects</button>
+      <button data-view="campaigns"><span>✉</span> Campagnes IA</button>
+      <button data-view="pipeline"><span>→</span> Pipeline</button>
+      <button data-view="quotes"><span>▧</span> Devis</button>
+      <button data-view="onboarding"><span>✓</span> Onboarding</button>
+      <button data-view="support"><span>◉</span> Support</button>
+      <button data-view="monitoring"><span>◆</span> Monitoring</button>
+    </nav>
+    <div class="side-foot"><i></i> Accès super-admin uniquement</div>
+  </aside>
+  <main class="main">
+    <header class="top"><div class="crumb"><span>Cook Pilot Business</span> / <b id="crumb">Dashboard</b></div><div class="top-right"><button class="btn link" onclick="location.href='/command.html'">← Command</button><div class="avatar">AL</div></div></header>
+    <section class="content" id="business-content"></section>
+  </main>
+</div>
+<script src="/business.js"></script>
+</body>
+</html>
