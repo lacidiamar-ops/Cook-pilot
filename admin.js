@@ -2,6 +2,7 @@
   const root=document.getElementById('admin-app')
   const SUPABASE_URL='https://vjulagaprzbnquynwjmt.supabase.co'
   const SUPABASE_KEY='sb_publishable_iT2AHtS29Qi63weZslm56g_oHkqbcvK'
+  const CENTER_RECOVERY_URL='https://cook-pilot-gestion.vercel.app/?cp_recovery=1&cp_admin_recovery=1'
   const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}})
   let overview=null
   let query=''
@@ -9,6 +10,7 @@
   const esc=value=>String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]))
   const status=(value,active=true)=>`<span class="pill ${active?'ok':'off'}">${esc(value)}</span>`
   const recoveryRequested=()=>new URLSearchParams(window.location.search).get('cp_recovery')==='1'||window.location.hash.includes('type=recovery')
+  const loginParams=()=>new URLSearchParams(window.location.search)
 
   function shell(content,user){
     root.innerHTML=`<div class="admin-shell">
@@ -30,14 +32,18 @@
   }
 
   function renderLogin(message=''){
+    const params=loginParams()
+    const presetEmail=params.get('email')||''
+    const passwordReset=params.get('password_reset')==='1'
+    const displayedMessage=message||(passwordReset?'Mot de passe enregistré. Connecte-toi maintenant à l’administration centrale.':'')
     root.innerHTML=`<main class="admin-login-wrap"><section class="admin-login">
       <div class="admin-mark large">C<i></i><i></i><i></i></div>
       <span class="eyebrow">COOK PILOT · ADMIN</span>
       <h1>Administration centrale</h1>
       <p>Connexion réservée au compte administrateur Cook Pilot. Center reste exclusivement l'application de gestion du client.</p>
-      ${message?`<div class="alert">${esc(message)}</div>`:''}
+      ${displayedMessage?`<div class="alert">${esc(displayedMessage)}</div>`:''}
       <form id="login-form">
-        <label>Adresse e-mail<input id="email" type="email" autocomplete="username" required></label>
+        <label>Adresse e-mail<input id="email" type="email" autocomplete="username" value="${esc(presetEmail)}" required></label>
         <label>Mot de passe<input id="password" type="password" autocomplete="current-password" required></label>
         <button type="submit">Se connecter</button>
         <button type="button" id="forgot-password" class="retry" style="width:100%;margin-top:8px">Mot de passe oublié ?</button>
@@ -52,6 +58,7 @@
       const password=document.getElementById('password').value
       const {error}=await client.auth.signInWithPassword({email,password})
       if(error){renderLogin('Adresse e-mail ou mot de passe incorrect.');return}
+      window.history.replaceState({},document.title,'/admin.html')
       await loadOverview()
     })
     document.getElementById('forgot-password')?.addEventListener('click',async()=>{
@@ -59,10 +66,9 @@
       if(!email){renderLogin('Renseigne ton adresse e-mail administrateur puis clique sur « Mot de passe oublié ? ».');return}
       const button=document.getElementById('forgot-password')
       button.disabled=true;button.textContent='Envoi…'
-      const redirectTo=`${window.location.origin}/admin.html?cp_recovery=1`
-      const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo})
+      const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:CENTER_RECOVERY_URL})
       if(error){renderLogin(`Impossible d’envoyer le lien : ${error.message}`);return}
-      renderLogin('Un lien sécurisé de réinitialisation vient d’être envoyé. Ouvre-le depuis ta boîte mail.')
+      renderLogin('Un nouveau lien sécurisé vient d’être envoyé. Ouvre le dernier e-mail reçu : il affichera directement la création du nouveau mot de passe administrateur.')
     })
   }
 
@@ -104,7 +110,8 @@
     const {data:{session}}=await client.auth.getSession()
     if(recoveryRequested()){
       if(session){renderRecovery();return}
-      renderLogin('Ouvre le lien de réinitialisation reçu par e-mail pour définir ton nouveau mot de passe.')
+      window.history.replaceState({},document.title,'/admin.html')
+      renderLogin('Ce lien de réinitialisation n’a plus de session active. Clique sur « Mot de passe oublié ? » pour recevoir un nouveau lien.')
       return
     }
     if(!session){renderLogin();return}
