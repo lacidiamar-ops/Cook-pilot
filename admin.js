@@ -8,6 +8,7 @@
 
   const esc=value=>String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]))
   const status=(value,active=true)=>`<span class="pill ${active?'ok':'off'}">${esc(value)}</span>`
+  const recoveryRequested=()=>new URLSearchParams(window.location.search).get('cp_recovery')==='1'||window.location.hash.includes('type=recovery')
 
   function shell(content,user){
     root.innerHTML=`<div class="admin-shell">
@@ -39,17 +40,56 @@
         <label>Adresse e-mail<input id="email" type="email" autocomplete="username" required></label>
         <label>Mot de passe<input id="password" type="password" autocomplete="current-password" required></label>
         <button type="submit">Se connecter</button>
+        <button type="button" id="forgot-password" class="retry" style="width:100%;margin-top:8px">Mot de passe oublié ?</button>
       </form>
       <a href="/command.html">← Retour à Cook Pilot Command</a>
     </section></main>`
     document.getElementById('login-form').addEventListener('submit',async event=>{
       event.preventDefault()
-      const button=event.currentTarget.querySelector('button')
+      const button=event.currentTarget.querySelector('button[type="submit"]')
       button.disabled=true;button.textContent='Connexion…'
       const email=document.getElementById('email').value.trim()
       const password=document.getElementById('password').value
       const {error}=await client.auth.signInWithPassword({email,password})
-      if(error){renderLogin(error.message);return}
+      if(error){renderLogin('Adresse e-mail ou mot de passe incorrect.');return}
+      await loadOverview()
+    })
+    document.getElementById('forgot-password')?.addEventListener('click',async()=>{
+      const email=document.getElementById('email').value.trim()
+      if(!email){renderLogin('Renseigne ton adresse e-mail administrateur puis clique sur « Mot de passe oublié ? ».');return}
+      const button=document.getElementById('forgot-password')
+      button.disabled=true;button.textContent='Envoi…'
+      const redirectTo=`${window.location.origin}/admin.html?cp_recovery=1`
+      const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo})
+      if(error){renderLogin(`Impossible d’envoyer le lien : ${error.message}`);return}
+      renderLogin('Un lien sécurisé de réinitialisation vient d’être envoyé. Ouvre-le depuis ta boîte mail.')
+    })
+  }
+
+  function renderRecovery(message=''){
+    root.innerHTML=`<main class="admin-login-wrap"><section class="admin-login">
+      <div class="admin-mark large">C<i></i><i></i><i></i></div>
+      <span class="eyebrow">COOK PILOT · ADMIN</span>
+      <h1>Nouveau mot de passe</h1>
+      <p>Choisis un nouveau mot de passe pour ton compte administrateur Cook Pilot.</p>
+      ${message?`<div class="alert">${esc(message)}</div>`:''}
+      <form id="reset-form">
+        <label>Nouveau mot de passe<input id="new-password" type="password" autocomplete="new-password" minlength="12" required></label>
+        <label>Confirmer<input id="confirm-password" type="password" autocomplete="new-password" minlength="12" required></label>
+        <button type="submit">Enregistrer le nouveau mot de passe</button>
+      </form>
+    </section></main>`
+    document.getElementById('reset-form')?.addEventListener('submit',async event=>{
+      event.preventDefault()
+      const password=document.getElementById('new-password').value
+      const confirm=document.getElementById('confirm-password').value
+      if(password.length<12){renderRecovery('Le mot de passe doit contenir au moins 12 caractères.');return}
+      if(password!==confirm){renderRecovery('Les deux mots de passe ne correspondent pas.');return}
+      const button=event.currentTarget.querySelector('button')
+      button.disabled=true;button.textContent='Enregistrement…'
+      const {error}=await client.auth.updateUser({password})
+      if(error){renderRecovery(`Impossible de modifier le mot de passe : ${error.message}`);return}
+      window.history.replaceState({},document.title,'/admin.html')
       await loadOverview()
     })
   }
@@ -62,6 +102,11 @@
 
   async function loadOverview(){
     const {data:{session}}=await client.auth.getSession()
+    if(recoveryRequested()){
+      if(session){renderRecovery();return}
+      renderLogin('Ouvre le lien de réinitialisation reçu par e-mail pour définir ton nouveau mot de passe.')
+      return
+    }
     if(!session){renderLogin();return}
     shell(`<section class="admin-content"><div class="loading-line">Chargement des établissements…</div></section>`,session.user)
     try{
@@ -130,8 +175,12 @@
   }
 
   client.auth.onAuthStateChange((event,session)=>{
+    if(event==='PASSWORD_RECOVERY'){renderRecovery();return}
     if(event==='SIGNED_OUT')renderLogin()
-    else if(session&&event==='SIGNED_IN')loadOverview()
+    else if(session&&event==='SIGNED_IN'){
+      if(recoveryRequested())renderRecovery()
+      else loadOverview()
+    }
   })
 
   loadOverview()
