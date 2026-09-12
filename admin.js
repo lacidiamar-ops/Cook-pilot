@@ -2,7 +2,7 @@
   const root=document.getElementById('admin-app')
   const SUPABASE_URL='https://vjulagaprzbnquynwjmt.supabase.co'
   const SUPABASE_KEY='sb_publishable_iT2AHtS29Qi63weZslm56g_oHkqbcvK'
-  const CENTER_RECOVERY_URL='https://cook-pilot.vercel.app/admin.html?cp_recovery=1'
+  const ADMIN_RECOVERY_URL=new URL('/admin.html?cp_recovery=1',window.location.origin).href
   const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}})
   let overview=null
   let query=''
@@ -66,7 +66,7 @@
       if(!email){renderLogin('Renseigne ton adresse e-mail administrateur puis clique sur « Mot de passe oublié ? ».');return}
       const button=document.getElementById('forgot-password')
       button.disabled=true;button.textContent='Envoi…'
-      const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:CENTER_RECOVERY_URL})
+      const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:ADMIN_RECOVERY_URL})
       if(error){renderLogin(`Impossible d’envoyer le lien : ${error.message}`);return}
       renderLogin('Un nouveau lien sécurisé vient d’être envoyé. Ouvre le dernier e-mail reçu : il affichera directement la création du nouveau mot de passe administrateur.')
     })
@@ -144,7 +144,7 @@
         <div class="client-head"><div><span>${active?'CLIENT ACTIF':'CLIENT À VÉRIFIER'}</span><h2>${esc(r.name)}</h2><p>${esc(r.city||'Ville non renseignée')} · ${esc(r.owner?.display_name||'Gérant non défini')}</p></div>${status(active?'Actif':'Inactif',active)}</div><p>Invitation : ${esc(({pending:'À envoyer',processing:'En cours',accepted_by_auth:'Acceptée par le service e-mail',failed:'Échec — à renvoyer',mail_sent_binding_pending:'Rattachement à terminer'})[r.invitation?.delivery_status]||'Non préparée')}</p>
         <div class="client-grid"><div><span>Gérant</span><b>${esc(r.owner?.email||r.email||'—')}</b></div><div><span>Safe</span><b>${safeEnabled?'Activé':'Non activé'}</b></div><div><span>Human</span><b>${humanEnabled?'Activé':'Non activé'}</b></div></div>
         <form class="module-form" data-id="${esc(r.id)}">
-          ${[['center','Center',centerEnabled],['safe','Safe',safeEnabled],['human','Human',humanEnabled]].map(([key,label,on])=>`<label><img src="/logo-${key}.png" alt="" width="42" height="42"><input type="checkbox" name="${key}_enabled" ${on?'checked':''}> ${label}</label>`).join('')}
+          ${[['center','Center',centerEnabled],['safe','Safe',safeEnabled],['human','Human',humanEnabled]].map(([key,label,on])=>`<label><img src="/logo-${key}.jpg" alt="" width="42" height="42"><input type="checkbox" name="${key}_enabled" ${on?'checked':''}> ${label}</label>`).join('')}
           <button type="submit">Enregistrer les applications</button><output aria-live="polite"></output>
         </form>
         <div class="client-actions"><button class="send-invitation" data-id="${esc(r.id)}">Envoyer le lien d’activation</button>
@@ -159,7 +159,7 @@
       <div class="metrics"><article><span>Établissements</span><b>${summary.establishments||0}</b></article><article><span>Clients actifs</span><b>${summary.active_clients||0}</b></article><article><span>Tâches aujourd’hui</span><b>${summary.tasks_completed||0}/${summary.tasks_today||0}</b></article></div>
       <details class="client-card"><summary>+ Nouveau client</summary><form id="create-client" class="client-create">
        <label>Établissement<input name="trade_name" required maxlength="120"></label><label>Responsable<input name="owner_name" required maxlength="120"></label><label>E-mail du responsable<input name="owner_email" type="email" required maxlength="180"></label>
-       <fieldset><legend>Applications souscrites</legend>${['center','safe','human'].map(app=>`<label><img src="/logo-${app}.png" alt="" width="48" height="48"><input type="checkbox" name="${app}_enabled" checked> ${app[0].toUpperCase()+app.slice(1)}</label>`).join('')}</fieldset>
+       <fieldset><legend>Applications souscrites</legend>${['center','safe','human'].map(app=>`<label><img src="/logo-${app}.jpg" alt="" width="48" height="48"><input type="checkbox" name="${app}_enabled" checked> ${app[0].toUpperCase()+app.slice(1)}</label>`).join('')}</fieldset>
        <button type="submit">Créer le client et envoyer l’invitation</button><output aria-live="polite"></output></form></details>
       <div class="search"><input id="search" value="${esc(query)}" placeholder="Rechercher un restaurant, une ville ou un gérant…"></div>
       <div class="client-list">${cards}</div>

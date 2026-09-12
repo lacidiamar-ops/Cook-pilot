@@ -1,6 +1,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2.108.2'
 import { sendClientInvitation } from '../_shared/clientInvitation.ts'
-const origins=['https://cook-pilot.vercel.app','https://cook-pilot-gestion.vercel.app','https://cook-pilot-haccp.vercel.app','https://cook-pilot-human.vercel.app']
+const origins=['https://cook-pilot-rho.vercel.app','https://cook-pilot-gestion.vercel.app','https://cook-pilot-haccp.vercel.app','https://cook-pilot-human.vercel.app']
 Deno.serve(async req=>{
  const origin=req.headers.get('Origin')||''
  const headers={'Access-Control-Allow-Origin':origins.includes(origin)?origin:origins[0],'Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'POST,OPTIONS','Vary':'Origin','Content-Type':'application/json','Cache-Control':'no-store'}
