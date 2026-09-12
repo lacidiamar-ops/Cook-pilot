@@ -2,7 +2,7 @@
   const root=document.getElementById('admin-app')
   const SUPABASE_URL='https://vjulagaprzbnquynwjmt.supabase.co'
   const SUPABASE_KEY='sb_publishable_iT2AHtS29Qi63weZslm56g_oHkqbcvK'
-  const CENTER_RECOVERY_URL='https://cook-pilot-gestion.vercel.app/?cp_recovery=1&cp_admin_recovery=1'
+  const CENTER_RECOVERY_URL='https://cook-pilot.vercel.app/admin.html?cp_recovery=1'
   const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}})
   let overview=null
   let query=''
@@ -136,13 +136,18 @@
     const needle=query.trim().toLowerCase()
     const rows=all.filter(r=>!needle||[r.name,r.city,r.owner?.display_name,r.owner?.email].some(v=>String(v||'').toLowerCase().includes(needle)))
     const cards=rows.map(r=>{
+      const centerEnabled=r.access?.center_enabled??r.gestion_enabled
       const safeEnabled=r.access?.safe_enabled??r.haccp_enabled
       const humanEnabled=r.access?.human_enabled??r.human_enabled
       const active=r.owner?.status==='active'&&r.access?.is_active!==false
       return `<article class="client-card">
-        <div class="client-head"><div><span>${active?'CLIENT ACTIF':'CLIENT À VÉRIFIER'}</span><h2>${esc(r.name)}</h2><p>${esc(r.city||'Ville non renseignée')} · ${esc(r.owner?.display_name||'Gérant non défini')}</p></div>${status(active?'Actif':'Inactif',active)}</div>
+        <div class="client-head"><div><span>${active?'CLIENT ACTIF':'CLIENT À VÉRIFIER'}</span><h2>${esc(r.name)}</h2><p>${esc(r.city||'Ville non renseignée')} · ${esc(r.owner?.display_name||'Gérant non défini')}</p></div>${status(active?'Actif':'Inactif',active)}</div><p>Invitation : ${esc(({pending:'À envoyer',processing:'En cours',accepted_by_auth:'Acceptée par le service e-mail',failed:'Échec — à renvoyer',mail_sent_binding_pending:'Rattachement à terminer'})[r.invitation?.delivery_status]||'Non préparée')}</p>
         <div class="client-grid"><div><span>Gérant</span><b>${esc(r.owner?.email||r.email||'—')}</b></div><div><span>Safe</span><b>${safeEnabled?'Activé':'Non activé'}</b></div><div><span>Human</span><b>${humanEnabled?'Activé':'Non activé'}</b></div></div>
-        <div class="client-actions">
+        <form class="module-form" data-id="${esc(r.id)}">
+          ${[['center','Center',centerEnabled],['safe','Safe',safeEnabled],['human','Human',humanEnabled]].map(([key,label,on])=>`<label><img src="/logo-${key}.png" alt="" width="42" height="42"><input type="checkbox" name="${key}_enabled" ${on?'checked':''}> ${label}</label>`).join('')}
+          <button type="submit">Enregistrer les applications</button><output aria-live="polite"></output>
+        </form>
+        <div class="client-actions"><button class="send-invitation" data-id="${esc(r.id)}">Envoyer le lien d’activation</button>
           <button class="safe-open" data-id="${esc(r.id)}" ${safeEnabled?'':'disabled'}>Configurer Safe</button>
           <small>${safeEnabled?'Ouvre Safe en mode administrateur sur cet établissement.':'Safe n’est pas activé pour ce client.'}</small>
         </div>
@@ -150,12 +155,34 @@
     }).join('')||'<div class="empty">Aucun établissement ne correspond à la recherche.</div>'
 
     shell(`<section class="admin-content">
-      <div class="admin-heading"><div><span class="eyebrow">PORTEFEUILLE CLIENTS</span><h1>Restaurants Cook Pilot</h1><p>Administration plateforme uniquement. Les applications Center, Safe et Human restent propres à chaque client.</p></div><button class="retry" id="refresh">Actualiser</button></div>
+      <div class="admin-heading"><div><span class="eyebrow">PORTEFEUILLE CLIENTS</span><h1>Restaurants Cook Pilot</h1><p>Administration plateforme uniquement. Les applications Center, Safe et Human restent propres à chaque client.</p></div><div><button class="retry" id="provider-checks">Tester les API</button> <button class="retry" id="refresh">Actualiser</button></div></div>
       <div class="metrics"><article><span>Établissements</span><b>${summary.establishments||0}</b></article><article><span>Clients actifs</span><b>${summary.active_clients||0}</b></article><article><span>Tâches aujourd’hui</span><b>${summary.tasks_completed||0}/${summary.tasks_today||0}</b></article></div>
+      <details class="client-card"><summary>+ Nouveau client</summary><form id="create-client" class="client-create">
+       <label>Établissement<input name="trade_name" required maxlength="120"></label><label>Responsable<input name="owner_name" required maxlength="120"></label><label>E-mail du responsable<input name="owner_email" type="email" required maxlength="180"></label>
+       <fieldset><legend>Applications souscrites</legend>${['center','safe','human'].map(app=>`<label><img src="/logo-${app}.png" alt="" width="48" height="48"><input type="checkbox" name="${app}_enabled" checked> ${app[0].toUpperCase()+app.slice(1)}</label>`).join('')}</fieldset>
+       <button type="submit">Créer le client et envoyer l’invitation</button><output aria-live="polite"></output></form></details>
       <div class="search"><input id="search" value="${esc(query)}" placeholder="Rechercher un restaurant, une ville ou un gérant…"></div>
       <div class="client-list">${cards}</div>
     </section>`,user)
 
+    document.getElementById('create-client')?.addEventListener('submit',async event=>{
+      event.preventDefault();const form=event.currentTarget,button=form.querySelector('button'),output=form.querySelector('output');
+      const fields=new FormData(form),payload=Object.fromEntries(fields);for(const app of ['center','safe','human'])payload[app+'_enabled']=fields.has(app+'_enabled');
+      if(!['center','safe','human'].some(app=>payload[app+'_enabled'])){output.textContent='Choisissez au moins une application.';return}
+      button.disabled=true;output.textContent='Création en cours…';
+      try{const result=await invoke('provision_client',payload);output.textContent=result.client.delivery_status==='accepted_by_auth'?'Client créé. Invitation transmise au service e-mail.':'Client enregistré. Invitation à renvoyer depuis sa fiche.';form.reset();await loadOverview()}
+      catch(error){output.textContent=error.message}finally{button.disabled=false}
+    });
+    document.querySelectorAll('.module-form').forEach(form=>form.addEventListener('submit',async event=>{
+      event.preventDefault();const button=form.querySelector('button'),output=form.querySelector('output'),fields=new FormData(form);const payload={establishment_id:form.dataset.id};
+      for(const app of ['center','safe','human'])payload[app+'_enabled']=fields.has(app+'_enabled');
+      if(!['center','safe','human'].some(app=>payload[app+'_enabled'])){output.textContent='Choisissez au moins une application.';return}
+      button.disabled=true;try{await invoke('set_modules',payload);output.textContent='Applications enregistrées.'}catch(error){output.textContent=error.message}finally{button.disabled=false}
+    }));
+    document.querySelectorAll('.send-invitation').forEach(button=>button.addEventListener('click',async()=>{
+      button.disabled=true;try{const result=await invoke('send_invitation',{establishment_id:button.dataset.id});button.textContent=result.delivery==='accepted_by_auth'?'Invitation transmise au service e-mail':'Envoi déjà demandé. Réessayez dans cinq minutes.'}catch(error){button.textContent='Échec de l’envoi';window.alert(error.message)}finally{button.disabled=false}
+    }));
+    document.getElementById('provider-checks')?.addEventListener('click',async event=>{const b=event.currentTarget;b.disabled=true;b.textContent='Tests en cours…';try{const r=await invoke('provider_checks');window.alert(JSON.stringify(r.checks,null,2))}catch(e){window.alert(e.message)}finally{b.disabled=false;b.textContent='Tester les API'}})
     document.getElementById('refresh')?.addEventListener('click',loadOverview)
     document.getElementById('search')?.addEventListener('input',event=>{query=event.target.value;renderOverview(user);const input=document.getElementById('search');input?.focus();input?.setSelectionRange(query.length,query.length)})
     document.querySelectorAll('.safe-open').forEach(button=>button.addEventListener('click',()=>openSafe(button)))
@@ -186,9 +213,10 @@
     if(event==='SIGNED_OUT')renderLogin()
     else if(session&&event==='SIGNED_IN'){
       if(recoveryRequested())renderRecovery()
-      else loadOverview()
+      else setTimeout(loadOverview,0)
     }
   })
 
   loadOverview()
 })()
+
